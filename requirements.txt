@@ -1,0 +1,4 @@
+airsim
+numpy
+opencv-python
+ultralytics
