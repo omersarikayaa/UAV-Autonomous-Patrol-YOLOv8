@@ -5,7 +5,7 @@ from ultralytics import YOLO
 import math 
 
 # 1. Sistem Kurulumu
-print("Hocam CityEnvironment Operasyon Merkezi hazırlanıyor...")
+print("Initializing CityEnvironment dual-UAV patrol system...")
 model = YOLO('yolov8n.pt')
 client = airsim.MultirotorClient()
 client.confirmConnection()
@@ -26,16 +26,16 @@ for drone_name in ["D1", "D2"]:
     client.armDisarm(True, vehicle_name=drone_name)
     client.takeoffAsync(vehicle_name=drone_name).join()
 
-    print(f"Hocam {drone_name} havalandı, 10 metre sola taktiksel kayış yapıyor...")
+    print(f"{drone_name} airborne. Moving to staging position...")
     client.moveToPositionAsync(0, -10, -22, 3, vehicle_name=drone_name).join()
 
-    print(f"Hocam {drone_name} kamerası sokak taraması için aşağı eğiliyor...")
+    print(f"{drone_name} camera tilted downward for aerial monitoring...")
     radyan_aci = math.radians(-45) 
     client.simSetCameraPose("0", airsim.Pose(airsim.Vector3r(0, 0, 0), airsim.to_quaternion(radyan_aci, 0, 0)), vehicle_name=drone_name)
 
-print("Hocam hazırlıklar bitti! Ekran açılıyor ve devriye başlıyor...")
+print("Initialization complete. Starting coordinated patrol...")
 
-win_name = "SAVASAN IHA - CITY DEVRIYE"
+win_name = "DUAL-UAV COORDINATED PATROL"
 cv2.namedWindow(win_name, cv2.WND_PROP_FULLSCREEN)
 cv2.setWindowProperty(win_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
@@ -67,7 +67,7 @@ try:
 
         if len(processed_frames) == 2:
             top_row = np.hstack((processed_frames[0], processed_frames[1]))
-            cv2.putText(top_row, f"HEDEF: {point_index + 1}/6 | OPERASYON AKTIF", (20, 40), 
+            cv2.putText(top_row, f"WAYPOINT: {point_index + 1}/6 | PATROL ACTIVE", (20, 40),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv2.imshow(win_name, top_row)
 
@@ -78,14 +78,14 @@ try:
         if time_check == ord('n'): 
             if point_index < len(devriye_noktalari) - 1:
                 point_index += 1
-                print(f"Hocam yeni hedefe yönlenildi: {devriye_noktalari[point_index]}")
+                print(f"Proceeding to next waypoint: {devriye_noktalari[point_index]}")
             else:
-                print("Hocam 6 hamle bitti, milimetrik iniş protokolü başlıyor...")
+                print("Patrol route complete. Starting controlled landing sequence...")
                 break
 
        
         if time_check == ord('q'):
-            print("Hocam operasyon iptal! Geldiğimiz yollardan üsse dönüyoruz...")
+            print("Patrol interrupted. Returning to base via previous waypoints...")
             
             # 1. Aşama: Geldiğin yolları sondan başa (0. indekse kadar) geri yürü
             for i in range(point_index, -1, -1):
@@ -107,7 +107,7 @@ try:
                     
                     if len(frames_q) == 2:
                         disp_q = np.hstack((frames_q[0], frames_q[1]))
-                        cv2.putText(disp_q, f"SISTEM: GERI DONUS YAPIYOR... ROTA {i+1}/6", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 2)
+                        cv2.putText(disp_q, f"SYSTEM: RETURNING TO BASE | WAYPOINT {i+1}/6", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 2)
                         cv2.imshow(win_name, disp_q)
                     cv2.waitKey(1)
                     
@@ -120,7 +120,7 @@ try:
                         break
 
             # 2. Aşama: Duraklar bitti, şimdi "Sıfır" noktasına (tam eve) dönüş
-            print("Hocam duraklar bitti, gerçek ana merkeze (0,0) uçuluyor...")
+            print("Return route complete. Approaching primary base position...")
             client.moveToPositionAsync(0, 0, -27, 5, vehicle_name="D1")
             client.moveToPositionAsync(5, 5, -27, 5, vehicle_name="D2")
             
@@ -134,7 +134,7 @@ try:
                 
                 if len(frames_q) == 2:
                     disp_q = np.hstack((frames_q[0], frames_q[1]))
-                    cv2.putText(disp_q, "SISTEM: EVE YANASIYOR...", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 2)
+                    cv2.putText(disp_q, "SYSTEM: APPROACHING BASE...", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 2)
                     cv2.imshow(win_name, disp_q)
                 cv2.waitKey(1)
                 
@@ -144,16 +144,16 @@ try:
                 if mesafe < 2.0:
                     break
             
-            print("Hocam tam merkeze ulaştık, inişe geçiliyor...")
+            print("Base position reached. Beginning landing sequence...")
             break 
        
 
 except Exception as e:
-    print(f"Hocam hata oluştu: {e}")
+    print(f"System error: {e}")
 
 finally:
     
-    print("Hocam droneların ataleti sıfırlanıyor, kayma engellenecek...")
+    print("Stabilizing UAVs before landing...")
     import time
     start_land_time = time.time()
 
@@ -169,7 +169,7 @@ finally:
         
         client.moveToPositionAsync(x_kilit, y_kilit, 2, 2, vehicle_name=drone_name)
 
-    print("Hocam konum kilitlendi, milimetrik asansör inişi başladı. Ekran açık...")
+    print("Position stabilized. Controlled vertical landing initiated...")
 
     while True:
         frames = []
@@ -187,7 +187,7 @@ finally:
 
         if len(frames) == 2:
             display = np.hstack((frames[0], frames[1]))
-            cv2.putText(display, "SISTEM: KILITLI VE MILIMETRIK INIS YAPILIYOR...", (20, 40), 
+            cv2.putText(display, "SYSTEM: CONTROLLED LANDING IN PROGRESS...", (20, 40),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.imshow(win_name, display)
         
@@ -195,7 +195,7 @@ finally:
 
         current_time = time.time()
         if all(z > -0.5 for z in altitudes) or (current_time - start_land_time > 12):
-            print("Hocam dronelar sıfır hatayla yere oturdu. Motorlar kapatılıyor.")
+            print("Landing sequence complete. Disarming UAVs...")
             break
 
     for drone_name in ["D1", "D2"]:
